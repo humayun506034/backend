@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePreorderDto } from './dto/create-preorder.dto';
 import { UpdatePreorderDto } from './dto/update-preorder.dto';
@@ -36,6 +38,19 @@ export type FindPreordersResponse = {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+};
+
+export type SeedPreordersResponse = {
+  inserted: number;
+};
+
+type SeedPreorder = {
+  name: string;
+  products: number;
+  preorderWhen: string;
+  startsAt: string;
+  endsAt: string | null;
+  isActive: boolean;
 };
 
 @Injectable()
@@ -153,5 +168,27 @@ export class PreorderService {
     return this.prisma.preorder.delete({
       where: { id },
     });
+  }
+
+  async seed(): Promise<SeedPreordersResponse> {
+    const filePath = resolve(process.cwd(), 'prisma/seed-data/preorders.json');
+    const preorders = JSON.parse(
+      readFileSync(filePath, 'utf8'),
+    ) as SeedPreorder[];
+
+    const result = await this.prisma.preorder.createMany({
+      data: preorders.map((preorder) => ({
+        name: preorder.name,
+        products: preorder.products,
+        preorderWhen: preorder.preorderWhen,
+        startsAt: new Date(preorder.startsAt),
+        endsAt: preorder.endsAt ? new Date(preorder.endsAt) : null,
+        isActive: preorder.isActive,
+      })),
+    });
+
+    return {
+      inserted: result.count,
+    };
   }
 }

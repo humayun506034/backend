@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable prettier/prettier */
-
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -34,7 +31,19 @@ function loadEnvFile() {
 
 function readSeedData(): SeedPreorder[] {
   const filePath = resolve(process.cwd(), 'prisma/seed-data/preorders.json');
-  return JSON.parse(readFileSync(filePath, 'utf8'));
+  const seedData = JSON.parse(readFileSync(filePath, 'utf8')) as SeedPreorder[];
+
+  return seedData;
+}
+
+function normalizeConnectionString(connectionString: string): string {
+  const url = new URL(connectionString);
+
+  if (url.searchParams.get('sslmode') === 'require') {
+    url.searchParams.set('sslmode', 'verify-full');
+  }
+
+  return url.toString();
 }
 
 async function main() {
@@ -45,13 +54,17 @@ async function main() {
     throw new Error('DATABASE_URL is missing in .env');
   }
 
+  const normalizedConnectionString = normalizeConnectionString(connectionString);
   const prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg({ connectionString: normalizedConnectionString }),
   });
 
   const preorders = readSeedData();
 
-  await prisma.preorder.createMany({
+  console.log('Starting preorder seed...');
+  console.log(`Found ${preorders.length} preorder records in JSON.`);
+
+  const result = await prisma.preorder.createMany({
     data: preorders.map((p) => ({
       name: p.name,
       products: p.products,
@@ -64,10 +77,13 @@ async function main() {
 
   await prisma.$disconnect();
 
-  console.log(`Seed complete. ${preorders.length} preorders inserted.`);
+  console.log('Seed completed successfully.');
+  console.log(`Inserted records: ${result.count}`);
+  console.log('Database is ready to use.');
 }
 
 void main().catch((err) => {
+  console.error('Seed failed.');
   console.error(err);
   process.exit(1);
 });

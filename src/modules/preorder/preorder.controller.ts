@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { PreorderService } from './preorder.service';
 import { CreatePreorderDto } from './dto/create-preorder.dto';
 import { UpdatePreorderDto } from './dto/update-preorder.dto';
@@ -27,6 +25,7 @@ import { FindPreordersQueryDto } from './dto/find-preorders-query.dto';
 import type {
   FindPreordersResponse,
   PreorderResponse,
+  SeedPreordersResponse,
 } from './preorder.service';
 
 @ApiTags('Preorders')
@@ -45,6 +44,20 @@ export class PreorderController {
     return sendResponse<PreorderResponse>({
       statusCode: HttpStatus.CREATED,
       message: 'Preorder created successfully.',
+      data: result,
+    });
+  }
+
+  @Post('seed')
+  @ApiCreatedResponse({
+    description: 'Sample preorder data seeded successfully.',
+  })
+  async seed() {
+    const result = await this.preorderService.seed();
+
+    return sendResponse<SeedPreordersResponse>({
+      statusCode: HttpStatus.CREATED,
+      message: 'Sample preorder data seeded successfully.',
       data: result,
     });
   }
