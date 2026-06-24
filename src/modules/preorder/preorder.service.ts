@@ -1,26 +1,23 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePreorderDto } from './dto/create-preorder.dto';
-import { UpdatePreorderDto } from './dto/update-preorder.dto';
 
 @Injectable()
 export class PreorderService {
+  constructor(private readonly prisma: PrismaService) {}
+
   create(createPreorderDto: CreatePreorderDto) {
-    return 'This action adds a new preorder';
-  }
-
-  findAll() {
-    return `This action returns all preorder`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} preorder`;
-  }
-
-  update(id: number, updatePreorderDto: UpdatePreorderDto) {
-    return `This action updates a #${id} preorder`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} preorder`;
+    return this.prisma.preorder.create({
+      data: {
+        name: createPreorderDto.name,
+        products: createPreorderDto.products,
+        preorderWhen: createPreorderDto.preorderWhen,
+        startsAt: new Date(createPreorderDto.startsAt),
+        endsAt: createPreorderDto.endsAt
+          ? new Date(createPreorderDto.endsAt)
+          : null,
+        isActive: createPreorderDto.isActive ?? true,
+      },
+    });
   }
 }
